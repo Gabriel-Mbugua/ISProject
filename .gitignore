@@ -1,0 +1,16 @@
+models/
+Learning/
+Practice/
+.vscode/
+Learning/
+MovieLens 20M Dataset/
+map.txt
+actor_1_name.txt
+actor_2_name.txt
+actor_3_name.txt
+company.txt
+country.txt
+description.txt
+director_name.txt
+test.py
+__pycache__/
