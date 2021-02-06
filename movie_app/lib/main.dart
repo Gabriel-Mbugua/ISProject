@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:movie_app/predict.dart';
-import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MyApp());
@@ -34,6 +33,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final budgetController = TextEditingController();
   final durationController = TextEditingController();
+  final companyController = TextEditingController();
   final countryController = TextEditingController();
   final directorController = TextEditingController();
   final actor1Controller = TextEditingController();
@@ -42,54 +42,39 @@ class _MyHomePageState extends State<MyHomePage> {
   final dateController = TextEditingController();
   final languageController = TextEditingController();
 
+  Future<Predict> _futurePrediction;
+
   final _formKey = GlobalKey<FormState>();
-
-  String _result;
-
-  Future<String> getPrediction() async {
-    print("getPrediction running");
-    var predict = await Predict(
-        budget: int.parse(budgetController.text),
-        duration: int.parse(durationController.text),
-        country: countryController.text,
-        director_name: directorController.text,
-        actor_1_name: actor1Controller.text,
-        actor_2_name: actor2Controller.text,
-        actor_3_name: actor3Controller.text,
-        release_date: dateController.text,
-        language: languageController.text);
-    var result = predict.prediction();
-    print("output: ${predict.prediction()}");
-    return result;
-    // setState(() {
-    //   result = predict.prediction();
-    //   print(result);
-    // });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Movie Success Prediction"),
+        title: (_futurePrediction == null)
+            ? Center(child: Text("Fill in the fields to get a prediction"))
+            : FutureBuilder<Predict>(
+            future: _futurePrediction,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Text(
+                  " Movie Prediction: ${snapshot.data.result}",
+                  // style: TextStyle(
+                  //   color: snapshot.data.result == "Success"
+                  //       ? Colors.green
+                  //       : Colors.red,
+                  );
+              } else if (snapshot.hasError) {
+                return Center(child: Text("${snapshot.error}"));
+              }
+              return Center(
+                  child: Text("Predection failed. Null data."));
+            }),
         leading: Icon(Icons.movie),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: ListView(
           children: [
-            _result == null
-                ? Center(child: Text("Put in a movie to get a prediction"))
-                : Center(
-                    child: _result == "Success"
-                        ? Text(
-                            _result,
-                            style: TextStyle(color: Colors.green),
-                          )
-                        : Text(
-                            _result,
-                            style: TextStyle(color: Colors.red),
-                          )),
             Form(
               key: _formKey,
               child: Column(
@@ -107,6 +92,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   MovieDetailsInput(
                       hint: "Country",
                       controller: countryController,
+                      keyboardType: TextInputType.text),
+                  MovieDetailsInput(
+                      hint: "Company",
+                      controller: companyController,
                       keyboardType: TextInputType.text),
                   MovieDetailsInput(
                       hint: "director_name",
@@ -132,12 +121,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       hint: "language",
                       controller: languageController,
                       keyboardType: TextInputType.text),
+
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16.0),
                       child: Container(
                         margin: EdgeInsets.all(10),
-                        height: 30.0,
+                        height: 40.0,
                         child: RaisedButton(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18.0),
@@ -148,9 +138,18 @@ class _MyHomePageState extends State<MyHomePage> {
                             // the form is invalid.
                             if (_formKey.currentState.validate()) {
                               print("Submit button pressed");
-                              var result = await getPrediction();
                               setState(() {
-                                _result = result;
+                                _futurePrediction = getPrediction(
+                                    int.parse(budgetController.text),
+                                    int.parse(durationController.text),
+                                    countryController.text,
+                                    companyController.text,
+                                    directorController.text,
+                                    actor1Controller.text,
+                                    actor2Controller.text,
+                                    actor3Controller.text,
+                                    dateController.text,
+                                    languageController.text);
                               });
                             }
                           },

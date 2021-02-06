@@ -12,6 +12,7 @@ def prediction():
     budget = request.json['budget']
     duration = request.json['duration']
     country = request.json['country']
+    company = request.json['company']
     director_name = request.json['director_name']
     actor_1_name = request.json['actor_1_name']
     actor_2_name = request.json['actor_2_name']
@@ -23,6 +24,7 @@ def prediction():
         'budget': budget,
         'duration': duration,
         'country': country,
+        'company' : company,
         'director_name': director_name,
         'actor_1_name': actor_1_name,
         'actor_2_name': actor_2_name,
@@ -31,7 +33,7 @@ def prediction():
         'language': language
     }
 
-    test = chat(budget,  duration, country, director_name, actor_1_name,
+    test = chat(budget,  duration, country, company, director_name, actor_1_name,
                 actor_2_name, actor_3_name, release_date, language)
     return jsonify(test)
     # return jsonify({'prediction' : chat(movie_details['budget'], movie_details['duration'], movie_details['country'], movie_details['director_name'], movie_details['actor_1_name']

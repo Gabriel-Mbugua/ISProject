@@ -7,12 +7,13 @@ from sklearn.preprocessing import LabelEncoder,StandardScaler
 from sklearn.decomposition import PCA
 
 
-model = joblib.load('models/RandomForest.joblib')
+model = joblib.load('models/gross.joblib')
+model_colmuns = joblib.load('model_columns')
 user_maps = {}
 prediction = "null"
 
 
-def chat(budget, duration, country, director_name, actor_1_name, actor_2_name, actor_3_name, release_date, language):
+def chat(budget, duration, country, company, director_name, actor_1_name, actor_2_name, actor_3_name, release_date, language):
     # budget = 180000000
     # duration = 160
     # country = "United States of America"
@@ -22,14 +23,15 @@ def chat(budget, duration, country, director_name, actor_1_name, actor_2_name, a
     # actor_3_name = "Paul Dano"
     # release_date = 2021-10-1
     # language = "English"
-    lst = [[budget, duration, country, director_name, actor_1_name, actor_2_name,
+    lst = [[budget, duration, country, company, director_name, actor_1_name, actor_2_name,
      actor_3_name, release_date, language]] 
 
-    df = pd.DataFrame(lst, columns=['budget', 'duration', 'country',
-     'director_name', 'actor_1_name', 'actor_2_name', 'actor_3_name', 'release_date',
+    df = pd.DataFrame(lst, columns=['budget', 'duration', 'country', 'company','director_name', 'actor_1_name', 'actor_2_name', 'actor_3_name', 'release_date',
      'language'])
-    print(df)
     # return df
+
+    df = df.reindex(columns = model_colmuns, fill_value = 0)
+    print(df.head())
 
     #convert_date_time
     df['release_date'] = pd.to_datetime(df['release_date'].astype(str),errors='coerce')
@@ -37,23 +39,51 @@ def chat(budget, duration, country, director_name, actor_1_name, actor_2_name, a
     df.drop(columns=['release_date'], inplace = True)
 
 
-    #reading user maps text files
-    le_maps = ['actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company']
-    new_maps = []
-    for feature in le_maps:  
-        s = open(f'{feature}.txt', 'r', encoding="utf-8").read()
-        le_map = eval(s)   
-        new_maps.append(le_map)
-    # print(new_maps)
+    # #reading user maps text files
+    # le_maps = ['actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company']
+    # new_maps = []
+    # for feature in le_maps:  
+    #     s = open(f'{feature}.txt', 'r', encoding="utf-8").read()
+    #     le_map = eval(s)   
+    #     new_maps.append(le_map)
+    # # print(new_maps)
+
+    # Parse the stringified features into their corresponding python objects
+    from ast import literal_eval
+
+    # Function to convert all strings to lower case and strip names of spaces
+    def clean_data(x):
+        if isinstance(x, list):
+            return [str.lower(i.replace(" ", "")) for i in x]
+        else:
+            #Check if director exists. If not, return empty string
+            if isinstance(x, str):
+                return str.lower(x.replace(" ", ""))
+            else:
+                return ''
+
+
+    features = ['actor_1_name','actor_2_name','actor_3_name','director_name','country','company']
+    for feature in features:
+        df[feature] = df[feature].apply(clean_data)
+    print(df)
+
 
     #one hot encoding 
-    nominal = ['dayofrelease', 'language']
+    nominal = ['dayofrelease', 'language','actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company']
     one_hot = pd.get_dummies(df[nominal])
-    df.drop(['dayofrelease','language'], axis=1, inplace=True)
+    df.drop(['dayofrelease','language','actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company'], axis=1, inplace=True)
     df = df.join(one_hot)    
 
+    print(df)
+
     #assigning label encoding mapping
-    ordinal = ['actor_1_name','actor_2_name','actor_3_name','director_name','country']
+    ordinal = ['actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company']
+
+    
+    # one_hot_enc(df)
+
+
     
     # for feature in ordinal:
     #     for i in new_maps:
@@ -66,28 +96,37 @@ def chat(budget, duration, country, director_name, actor_1_name, actor_2_name, a
     #             else:
     #                 continue  
 
-    for feature in ordinal:
-        if df[feature].values[0] in new_maps[0].keys():
-            print(df[feature].values[0],new_maps[0][df[feature].values[0]])
-            df[feature] = new_maps[0][df[feature].values[0]]
-        elif df[feature].values[0] in new_maps[1].keys():
-            print(df[feature].values[0],new_maps[1][df[feature].values[0]])
-            df[feature] = new_maps[1][df[feature].values[0]]
-        elif df[feature].values[0] in new_maps[2].keys():
-            print(df[feature].values[0],new_maps[2][df[feature].values[0]])
-            df[feature] = new_maps[2][df[feature].values[0]]
-        elif df[feature].values[0] in new_maps[3].keys():
-            print(df[feature].values[0],new_maps[3][df[feature].values[0]])
-            df[feature] = new_maps[3][df[feature].values[0]]
-        elif df[feature].values[0] in new_maps[4].keys():
-            print(df[feature].values[0],new_maps[4][df[feature].values[0]])
-            df[feature] = new_maps[4][df[feature].values[0]]
-        elif df[feature].values[0] in new_maps[5].keys():
-            print(df[feature].values[0],new_maps[5][df[feature].values[0]])
-            df[feature] = new_maps[5][df[feature].values[0]]
-        else: 
-            print("Not found")      
+    # for feature in ordinal:
+    #     if df[feature].values[0] in new_maps[0].keys():
+    #         print(df[feature].values[0],new_maps[0][df[feature].values[0]])
+    #         df[feature] = new_maps[0][df[feature].values[0]]
+    #     elif df[feature].values[0] in new_maps[1].keys():
+    #         print(df[feature].values[0],new_maps[1][df[feature].values[0]])
+    #         df[feature] = new_maps[1][df[feature].values[0]]
+    #     elif df[feature].values[0] in new_maps[2].keys():
+    #         print(df[feature].values[0],new_maps[2][df[feature].values[0]])
+    #         df[feature] = new_maps[2][df[feature].values[0]]
+    #     elif df[feature].values[0] in new_maps[3].keys():
+    #         print(df[feature].values[0],new_maps[3][df[feature].values[0]])
+    #         df[feature] = new_maps[3][df[feature].values[0]]
+    #     elif df[feature].values[0] in new_maps[4].keys():
+    #         print(df[feature].values[0],new_maps[4][df[feature].values[0]])
+    #         df[feature] = new_maps[4][df[feature].values[0]]
+    #     elif df[feature].values[0] in new_maps[5].keys():
+    #         print(df[feature].values[0],new_maps[5][df[feature].values[0]])
+    #         df[feature] = new_maps[5][df[feature].values[0]]
+    #     else: 
+    #         print("Not found")      
+    
+    # stand_scaler(df)
 
+    df = df.sub(df.mean(1), axis=0).div(df.std(1), axis=0)
+    print(df)
+
+    vals = df.loc[:,:].values 
+    print("VALUES: ",vals)
+    pca = PCA(n_components=1)
+    X = pca.fit_transform(vals)
 
     data = df.loc[:,:].values      
     print(data) 
@@ -116,12 +155,12 @@ def reading(df):
     # print(new_maps)    
     one_hot_enc(df, new_maps)
 
-def one_hot_enc(df,new_maps):
-    nominal = ['dayofrelease', 'language']
+def one_hot_enc(df):
+    nominal = ['dayofrelease', 'language','actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company']
     one_hot = pd.get_dummies(df[nominal])
-    df.drop(['dayofrelease','language'], axis=1, inplace=True)
+    df.drop(['dayofrelease','language','actor_1_name','actor_2_name','actor_3_name','director_name','country', 'company'], axis=1, inplace=True)
     df = df.join(one_hot)
-    label_enc(df, new_maps)
+    # label_enc(df, new_maps)
 
 def label_enc(df, new_maps):    
     ordinal = ['actor_1_name','actor_2_name','actor_3_name','director_name','country']
@@ -139,10 +178,14 @@ def label_enc(df, new_maps):
 
 
 def stand_scaler(df):
-    print(df)
+    print(df.values)
     scaler = StandardScaler()
-    numerical = df.columns[df.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
-    df[numerical] = scaler.fit_transform(df[numerical])
+    # numerical = df.columns[df.dtypes.apply(lambda c: np.issubdtype(c, np.number))]
+    # df[numerical] = scaler.fit_transform(df[numerical])
+    x = df.values
+    x_scaled = scaler.fit_transform(x)
+    df = pd.DataFrame(x_scaled)
+    print("Standard scaler: ",df.head())
     # predict(df.loc[:,:].values)
     # pca_process(df)
 
@@ -160,7 +203,7 @@ def predict(X):
     return prediction
 
 # print(model.predict(lst))
-# chat(200000000,170,"United States of America", "Aaron Schneider", "50 Cent", "Chris Sanders","Adam Brody","2021-10-1","English")
+chat(200000000,170,"United States of America", "Metro Productions", "Aaron Schneider", "50 Cent", "Chris Sanders","Adam Brody","2021-10-1","English")
 
     
     
