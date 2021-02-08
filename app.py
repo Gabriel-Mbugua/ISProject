@@ -12,6 +12,7 @@ def prediction():
     budget = request.json['budget']
     duration = request.json['duration']
     country = request.json['country']
+    company = request.json['company']
     director_name = request.json['director_name']
     actor_1_name = request.json['actor_1_name']
     actor_2_name = request.json['actor_2_name']
@@ -21,19 +22,20 @@ def prediction():
 
     movie_details = {
         'budget': budget,
+        'language': language,
         'duration': duration,
         'country': country,
+        'company' : company,
         'director_name': director_name,
         'actor_1_name': actor_1_name,
         'actor_2_name': actor_2_name,
         'actor_3_name': actor_3_name,
-        'release_date': release_date,
-        'language': language
+        'release_date': release_date
     }
 
-    test = chat(budget,  duration, country, director_name, actor_1_name,
-                actor_2_name, actor_3_name, release_date, language)
-    return jsonify(test)
+    test = chat(budget,language, duration, country, company, director_name, actor_1_name,
+                actor_2_name, actor_3_name, release_date)
+    return jsonify(result=test)
     # return jsonify({'prediction' : chat(movie_details['budget'], movie_details['duration'], movie_details['country'], movie_details['director_name'], movie_details['actor_1_name']
     # ,movie_details['actor_2_name'], movie_details['actor_3_name'], movie_details['release_date'] ,movie_details['language'])})
 
@@ -50,4 +52,4 @@ def get_movie_details():
     print(response.text)
 
 
-app.run(debug=True)
+app.run(debug=True, host='0.0.0.0')
