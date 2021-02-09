@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:movie_app/NavigatorPage.dart';
+import 'package:movie_app/home_page.dart';
 import 'package:movie_app/predict.dart';
+import 'package:movie_app/previous_movies.dart';
 
 void main() {
   runApp(MyApp());
@@ -13,7 +16,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Movie Success Prediction',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.purple,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MyHomePage(title: 'Movie Prediction'),
@@ -44,127 +47,66 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<Predict> _futurePrediction;
 
+  int _pageIndex = 0;
+
   final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
+    final node = FocusScope.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: (_futurePrediction == null)
             ? Center(child: Text("Fill in the fields to get a prediction"))
             : FutureBuilder<Predict>(
-            future: _futurePrediction,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return Text(
-                  " Movie Prediction: ${snapshot.data.result}",
-                  // style: TextStyle(
-                  //   color: snapshot.data.result == "Success"
-                  //       ? Colors.green
-                  //       : Colors.red,
-                  );
-              } else if (snapshot.hasError) {
-                return Center(child: Text("${snapshot.error}"));
-              }
-              return Center(
-                  child: Text("Predection failed. Null data."));
-            }),
+                future: _futurePrediction,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Text(
+                      " Movie Prediction: ${snapshot.data.result}",
+                      // style: TextStyle(
+                      //   color: snapshot.data.result == "Success"
+                      //       ? Colors.green
+                      //       : Colors.red,
+                    );
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("${snapshot.error}"));
+                  }
+                  return Center(child: Text("Predection failed. Null data."));
+                }),
         leading: Icon(Icons.movie),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: ListView(
-          children: [
-            Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  MovieDetailsInput(
-                    hint: "Budget",
-                    controller: budgetController,
-                    keyboardType: TextInputType.number,
-                  ),
-                  MovieDetailsInput(
-                      hint: "Duration",
-                      controller: durationController,
-                      keyboardType: TextInputType.number),
-                  MovieDetailsInput(
-                      hint: "Country",
-                      controller: countryController,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "Company",
-                      controller: companyController,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "director_name",
-                      controller: directorController,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "actor_1_name",
-                      controller: actor1Controller,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "actor_2_name",
-                      controller: actor2Controller,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "actor_3_name",
-                      controller: actor3Controller,
-                      keyboardType: TextInputType.text),
-                  MovieDetailsInput(
-                      hint: "release_date",
-                      controller: dateController,
-                      keyboardType: TextInputType.datetime),
-                  MovieDetailsInput(
-                      hint: "language",
-                      controller: languageController,
-                      keyboardType: TextInputType.text),
-
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      child: Container(
-                        margin: EdgeInsets.all(10),
-                        height: 40.0,
-                        child: RaisedButton(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18.0),
-                              side: BorderSide(
-                                  color: Color.fromRGBO(0, 160, 227, 1))),
-                          onPressed: () async {
-                            // Validate will return true if the form is valid, or false if
-                            // the form is invalid.
-                            if (_formKey.currentState.validate()) {
-                              print("Submit button pressed");
-                              setState(() {
-                                _futurePrediction = getPrediction(
-                                    int.parse(budgetController.text),
-                                    int.parse(durationController.text),
-                                    countryController.text,
-                                    companyController.text,
-                                    directorController.text,
-                                    actor1Controller.text,
-                                    actor2Controller.text,
-                                    actor3Controller.text,
-                                    dateController.text,
-                                    languageController.text);
-                              });
-                            }
-                          },
-                          color: Color.fromRGBO(0, 160, 227, 1),
-                          textColor: Colors.white,
-                          child: Text('Submit', style: TextStyle(fontSize: 15)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: SafeArea(
+        child: IndexedStack(
+          index: _pageIndex,
+          children: <Widget>[
+            HomeScreen(),
+            PreviousMoviesScreen(),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _pageIndex,
+        elevation: 0,
+        // backgroundColor: Theme.of(context).primaryColor,
+        // selectedItemColor: Theme.of(context).accentColor,
+        type: BottomNavigationBarType.fixed,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            title: Text("Home"),
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            title: Text("Search"),
+          ),
+        ],
+        onTap: (index) {
+          setState(() {
+            _pageIndex = index;
+          });
+        },
       ),
     );
   }
@@ -174,8 +116,9 @@ class MovieDetailsInput extends StatelessWidget {
   final String hint;
   final TextEditingController controller;
   final TextInputType keyboardType;
+  final Widget icon;
 
-  MovieDetailsInput({this.hint, this.controller, this.keyboardType});
+  MovieDetailsInput({this.hint, this.controller, this.keyboardType, this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -183,11 +126,19 @@ class MovieDetailsInput extends StatelessWidget {
       padding: const EdgeInsets.all(6.0),
       child: TextFormField(
         controller: controller,
+        textInputAction: TextInputAction.next,
         decoration: InputDecoration(
           hintText: hint,
+          icon: icon,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
+              // borderRadius: BorderRadius.circular(25),
+              ),
+          focusedBorder: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          contentPadding:
+              EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           fillColor: Colors.orangeAccent,
         ),
         keyboardType: keyboardType,
