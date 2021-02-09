@@ -2,6 +2,8 @@ models/gross.joblib
 Practice/
 .vscode/
 venv/
+Learning/
+MovieLens 20M Dataset/
 neural_net.ipynb
 KNN.ipynb
 ISProject.ipynb
