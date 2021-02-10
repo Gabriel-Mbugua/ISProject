@@ -2,6 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:movie_app/models/movie.dart';
 import 'package:movie_app/predict.dart';
 import 'package:movie_app/previous_movies.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
+
+// Define a function that inserts movies into the database
+
+Future<void> insertMovie(Movie movie) async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Open the database and store the reference.
+  final Future<Database> database = openDatabase(
+    // Set the path to the database. Note: Using the `join` function from the
+    // `path` package is best practice to ensure the path is correctly
+    // constructed for each platform.
+    join(await getDatabasesPath(), 'movie_database.db'),
+    // When the database is first created, create a table to store movies.
+    onCreate: (db, version) {
+      // Run the CREATE TABLE statement on the database.
+      return db.execute(
+        // "CREATE TABLE movies(id INTEGER PRIMARY KEY, movie_title TEXT, result TEXT)",
+        "CREATE TABLE movies(movie_title TEXT, result TEXT)",
+      );
+    },
+    // Set the version. This executes the onCreate function and provides a
+    // path to perform database upgrades and downgrades.
+    version: 1,
+  );
+
+  // Get a reference to the database.
+  final Database db = await database;
+
+  // Insert the Movie into the correct table. You might also specify the
+  // `conflictAlgorithm` to use in case the same movie is inserted twice.
+  //
+  // In this case, replace any previous data.
+  await db.insert(
+    'movies',
+    movie.toMap(),
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+
+  print(movie);
+}
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -30,14 +72,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       // appBar: AppBar(
-      //   elevation: 0,
-      //   leading: IconButton(icon: Icon(Icons.arrow_back_ios), onPressed: (){
-      //     Navigator.pop(context);
-      //   }),
+      //   title: (_futurePrediction == null)
+      //       ? Center(child: Text(""))
+      //       : FutureBuilder<Predict>(
+      //       future: _futurePrediction,
+      //       builder: (context, snapshot) {
+      //         if (snapshot.hasData) {
+      //           val = snapshot.data.result;
+      //           return Text(
+      //             " Movie Prediction: ${snapshot.data.result}",
+      //             // style: TextStyle(
+      //             //   color: snapshot.data.result == "Success"
+      //             //       ? Colors.green
+      //             //       : Colors.red,
+      //           );
+      //         } else if (snapshot.hasError) {
+      //           return Center(child: Text("${snapshot.error}"));
+      //         }
+      //         return Center(child: Text("Predection failed. Null data."));
+      //       }),
+      //   leading: Icon(Icons.movie),
       // ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.only(
+              top: 15.0, right: 15.0, bottom: 0.0, left: 15.0),
           child: ListView(
             children: [
               Form(
@@ -144,7 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Theme.of(context).primaryColor,
                       ),
                     ),
-
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -161,24 +219,39 @@ class _HomeScreenState extends State<HomeScreen> {
                                 print("Submit button pressed");
                                 setState(() {
                                   _futurePrediction = getPrediction(
-                                      int.parse(budgetController.text),
-                                      int.parse(durationController.text),
-                                      countryController.text,
-                                      companyController.text,
-                                      directorController.text,
-                                      actor1Controller.text,
-                                      actor2Controller.text,
-                                      actor3Controller.text,
-                                      dateController.text,
-                                      languageController.text);
+                                          int.parse(budgetController.text),
+                                          int.parse(durationController.text),
+                                          countryController.text,
+                                          companyController.text,
+                                          directorController.text,
+                                          actor1Controller.text,
+                                          actor2Controller.text,
+                                          actor3Controller.text,
+                                          dateController.text,
+                                          languageController.text)
+                                      .then((value) async {
+                                    print('inserting');
+                                    await insertMovie(Movie(
+                                        movie_title: nameController.text,
+                                        result: value.result));
+                                    print(value.result);
+
+                                    showDialog(
+                                      context: context,
+                                      builder: (BuildContext context) =>
+                                          _resultPopup(
+                                              context,
+                                              nameController.text,
+                                              value.result),
+                                    );
+                                  });
                                 });
-                                val = (await _futurePrediction) as String;
-                                insertMovie(Movie(movie_title: nameController.text, result: val));
                               }
                             },
                             color: Theme.of(context).accentColor,
                             textColor: Colors.white,
-                            child: Text('Submit', style: TextStyle(fontSize: 15)),
+                            child:
+                                Text('Submit', style: TextStyle(fontSize: 15)),
                           ),
                         ),
                       ),
@@ -190,6 +263,35 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _resultPopup(BuildContext context, String movie_name, String result) {
+    return new AlertDialog(
+      title: Text('$movie_name Prediction'),
+      content: new Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          (result == null)
+              ? Text("Prediction failed!")
+              : Text(
+                  result,
+                  style: result == "Success"
+                      ? TextStyle(color: Colors.green)
+                      : TextStyle(color: Colors.red),
+                ),
+        ],
+      ),
+      actions: <Widget>[
+        new FlatButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          textColor: Theme.of(context).primaryColor,
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }
@@ -213,14 +315,14 @@ class MovieDetailsInput extends StatelessWidget {
           hintText: hint,
           icon: icon,
           border: OutlineInputBorder(
-            // borderRadius: BorderRadius.circular(25),
-          ),
+              // borderRadius: BorderRadius.circular(25),
+              ),
           focusedBorder: InputBorder.none,
           enabledBorder: InputBorder.none,
           errorBorder: InputBorder.none,
           disabledBorder: InputBorder.none,
           contentPadding:
-          EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
+              EdgeInsets.only(left: 15, bottom: 11, top: 11, right: 15),
           fillColor: Colors.orangeAccent,
         ),
         keyboardType: keyboardType,

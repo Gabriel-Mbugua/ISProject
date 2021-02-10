@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:movie_app/NavigatorPage.dart';
 import 'package:movie_app/home_page.dart';
 import 'package:movie_app/predict.dart';
 import 'package:movie_app/previous_movies.dart';
@@ -57,24 +56,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: (_futurePrediction == null)
-            ? Center(child: Text("Fill in the fields to get a prediction"))
-            : FutureBuilder<Predict>(
-                future: _futurePrediction,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return Text(
-                      " Movie Prediction: ${snapshot.data.result}",
-                      // style: TextStyle(
-                      //   color: snapshot.data.result == "Success"
-                      //       ? Colors.green
-                      //       : Colors.red,
-                    );
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text("${snapshot.error}"));
-                  }
-                  return Center(child: Text("Predection failed. Null data."));
-                }),
+        title: Text("MAPUM"),
         leading: Icon(Icons.movie),
       ),
       body: SafeArea(
@@ -98,8 +80,8 @@ class _MyHomePageState extends State<MyHomePage> {
             title: Text("Home"),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            title: Text("Search"),
+            icon: Icon(Icons.list),
+            title: Text("Predictions"),
           ),
         ],
         onTap: (index) {

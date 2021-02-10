@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-
 import 'models/movie.dart';
 
-Future<Database> init_db() async {
+Future<List<Movie>> fetchMovies() async {
   // Avoid errors caused by flutter upgrade.
   // Importing 'package:flutter/widgets.dart' is required.
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,44 +18,20 @@ Future<Database> init_db() async {
     onCreate: (db, version) {
       // Run the CREATE TABLE statement on the database.
       return db.execute(
-        "CREATE TABLE movies(id INTEGER PRIMARY KEY, movie_title TEXT, result TEXT)",
+        // "CREATE TABLE movies(id INTEGER PRIMARY KEY, movie_title TEXT, result TEXT)",
+        "CREATE TABLE movies(movie_title TEXT, result TEXT)",
       );
     },
     // Set the version. This executes the onCreate function and provides a
     // path to perform database upgrades and downgrades.
     version: 1,
   );
-
-  return database;
-}
-
-// Define a function that inserts movies into the database
-Future<void> insertMovie(Movie movie) async {
-  // Get a reference to the database.
-  final Database db = await init_db();
-
-  // Insert the Movie into the correct table. You might also specify the
-  // `conflictAlgorithm` to use in case the same movie is inserted twice.
-  //
-  // In this case, replace any previous data.
-  await db.insert(
-    'movies',
-    movie.toMap(),
-    conflictAlgorithm: ConflictAlgorithm.replace,
-  );
-
-  final movie_data = Movie(
-    movie_title: 'Star Wars',
-    result: "Success",
-  );
-
-  await insertMovie(movie_data);
-}
+  // return database;
 
 // A method that retrieves all the movies from the movies table.
-Future<List<Movie>> movies() async {
+
   // Get a reference to the database.
-  final Database db = await init_db();
+  final Database db = await database;
 
   // Query the table for all The Movies.
   final List<Map<String, dynamic>> maps = await db.query('movies');
@@ -69,8 +44,8 @@ Future<List<Movie>> movies() async {
     );
   });
 
-  List p_movies = await movies();
-  print(p_movies[0]);
+//   List p_movies = await movies();
+//   print(p_movies[0]);
 }
 
 class PreviousMoviesScreen extends StatefulWidget {
@@ -79,30 +54,60 @@ class PreviousMoviesScreen extends StatefulWidget {
 }
 
 class _PreviousMoviesScreenState extends State<PreviousMoviesScreen> {
-  List<Movie> movie_list;
+  Future<List<Movie>> _movieList;
 
-  @override
-  void didChangeDependencies() async {
-    // TODO: implement didChangeDependencies
-    movie_list = await movies();
-    super.didChangeDependencies();
-  }
+  // @override
+  // void didChangeDependencies() async {
+  //   // TODO: implement didChangeDependencies
+  //   _movieList = await init_db();
+  //   super.didChangeDependencies();
+  // }
 
   @override
   Widget build(BuildContext context) {
+    _movieList = fetchMovies();
+
     return Scaffold(
       body: Center(
-        child: movie_list.isEmpty
+        child: (_movieList == null)
             ? Center(
                 child: CircularProgressIndicator(),
               )
-            : ListView.builder(
-              itemCount: movie_list.length,
-              itemBuilder: (ctx, i) => ListTile(
-                title: Text(movie_list[i].movie_title),
-                subtitle: Text(movie_list[i].result),
-              ),
-            ),
+            : FutureBuilder<List<Movie>>(
+                future: _movieList,
+                // itemCount: _movieList.length,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return snapshot.data.length != 0
+                        ? ListView.builder(
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (ctx, i) => Column(
+                                  children: [
+                                    Material(
+                                      elevation: 2,
+                                      child: ListTile(
+                                        title: Text(
+                                          snapshot.data[i].movie_title,
+                                        ),
+                                        trailing: Text(
+                                          snapshot.data[i].result,
+                                          style:
+                                              snapshot.data[i].result == "Success"
+                                                  ? TextStyle(color: Colors.green)
+                                                  : TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ))
+                        : Center(
+                            child: Text("Empty list of movies"),
+                          );
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text("${snapshot.error}"));
+                  }
+                  return Center(child: Text("Failed to load data."));
+                }),
       ),
     );
   }

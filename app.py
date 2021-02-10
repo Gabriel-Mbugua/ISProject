@@ -20,28 +20,9 @@ def prediction():
     release_date = request.json['release_date']
     language = request.json['language']
 
-    movie_details = {
-        'budget': budget,
-        'language': language,
-        'duration': duration,
-        'country': country,
-        'company' : company,
-        'director_name': director_name,
-        'actor_1_name': actor_1_name,
-        'actor_2_name': actor_2_name,
-        'actor_3_name': actor_3_name,
-        'release_date': release_date
-    }
-
-<<<<<<< HEAD
     test = chat(budget,language, duration, country, company, director_name, actor_1_name,
                 actor_2_name, actor_3_name, release_date)
-    return jsonify(result=test)
-=======
-    test = chat(budget,  duration, country, company, director_name, actor_1_name,
-                actor_2_name, actor_3_name, release_date, language)
-    return jsonify(test)
->>>>>>> c1f49bb42f7813e09edcf9499aaf6e1ac170d504
+    return jsonify(result = test)
     # return jsonify({'prediction' : chat(movie_details['budget'], movie_details['duration'], movie_details['country'], movie_details['director_name'], movie_details['actor_1_name']
     # ,movie_details['actor_2_name'], movie_details['actor_3_name'], movie_details['release_date'] ,movie_details['language'])})
 

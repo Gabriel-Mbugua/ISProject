@@ -17,6 +17,6 @@ class Movie{
 
   @override
   String toString() {
-    return 'Movie{name: $movie_title, age: $result}';
+    return 'Movie{name: $movie_title, result: $result}';
   }
 }
